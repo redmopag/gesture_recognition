@@ -6,7 +6,7 @@ from sklearn.model_selection import train_test_split
 RANDOM_SEED = 42
 
 # Настройка путей чтения данных и сохарнения модели
-dataset = 'model/points_classifier/keypoint.csv'
+dataset = 'model\points_classifier\keypoint.csv'
 model_save_path = 'model/points_classifier/keypoint_classifier.hdf5'
 tflite_save_path = 'model/points_classifier/keypoint_classifier.tflite'
 
@@ -54,3 +54,12 @@ model.fit(
 
 # Оценка модели
 val_loss, val_acc = model.evaluate(X_test, y_test, batch_size=128)
+print(f"Loss: {val_loss}")
+print(f"Accuracy: {val_acc}")
+
+# Конвертирование модели для Tensorflow-Lite
+converter = tf.lite.TFLiteConverter.from_keras_model(model)
+converter.optimizations = [tf.lite.Optimize.DEFAULT]
+tflite_quantized_model = converter.convert()
+
+open(tflite_save_path, 'wb').write(tflite_quantized_model)

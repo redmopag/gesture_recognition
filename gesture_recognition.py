@@ -24,7 +24,7 @@ def main():
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)  # Высота
 
     # Классификатор жестов рук
-    hand_sign_classifier = KeyPointClassifier()
+    hand_sign_classifier = None
 
     width, height = autopy.screen.size() # Размер экрана
 
@@ -35,13 +35,16 @@ def main():
             row[0] for row in classifier_labels
         ]
 
-    mode = 0 # Режим работы программы (0 - распознавание, 1 - запись датасета)
+    # Режим работы программы (0 - распознавание, 1 - запись датасета)
+    mode = int(input("Enter mode (0 - classification, 1 - logging dataset): "))
+    if mode == 0:
+        hand_sign_classifier = KeyPointClassifier()
 
     while cap.isOpened(): # Выполняем пока работает захват камеры
         key = cv2.waitKey(1)
         if key == 27: # Esc
             break;
-        number, mode = select_mode(key, mode)
+        number = key - 48
 
         success, frame = cap.read()
         if not success:
@@ -62,20 +65,19 @@ def main():
                 pre_processed_landmark_list = pre_process_landmark(landmark_list)
 
                 # Если включен режим записи датасета, то заполняем датасет
-                write_csv(number, mode, pre_processed_landmark_list)
-
-                # Классификация жестов рук
-                hand_sign_id = hand_sign_classifier(pre_processed_landmark_list)
-                
-                # Вывод информации
-                debug_frame = draw_info_text(
-                    debug_frame, handedness, classifier_labels[hand_sign_id]
-                )
+                if mode == 1:
+                    write_csv(number, pre_processed_landmark_list)
+                    # Вывод информации
+                    debug_frame = draw_logging_dataset_info(debug_frame, number)
+                elif mode == 0: # Иначе классификация жестов рук
+                    hand_sign_id = hand_sign_classifier(pre_processed_landmark_list)
+                    # Вывод информации
+                    debug_frame = draw_classification_info(debug_frame, handedness, classifier_labels[hand_sign_id])
             
             # Отображение точек руки
-            mp_draw.draw_landmarks(frame, result.multi_hand_landmarks[0], mp.solutions.hands.HAND_CONNECTIONS)
+            mp_draw.draw_landmarks(debug_frame, result.multi_hand_landmarks[0], mp.solutions.hands.HAND_CONNECTIONS)
 
-        cv2.imshow('Gesture Recognition', frame)
+        cv2.imshow('Gesture Recognition', debug_frame)
 
     cap.release()
     cv2.destroyAllWindows()
@@ -136,23 +138,34 @@ def select_mode(key, mode):
         mode = 2
     return number, mode
 
-def write_csv(number, mode, landmark_list):
-    if mode == 0:
-        pass
-    if mode == 1 and (0 <= number <= 9): # Режим записи датасета и задание индекса для жеста (number)
-        csv_path = 'model/points_classifier/keypoint.csv'
+def write_csv(number, landmark_list):
+    if 0 <= number <= 9: # Режим записи датасета и задание индекса для жеста (number)
+        csv_path = 'model\points_classifier\keypoint.csv'
         with open(csv_path, 'a', newline="") as f:
             writer = csv.writer(f)
             writer.writerow([number, *landmark_list])
     
     return
 
-def draw_info_text(frame, handedness, hand_sign_text):
+def draw_logging_dataset_info(frame, number):
+    cv2.putText(frame, "MODE: Logging Key Point", (10, 90),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1,
+                cv2.LINE_AA)
+    if 0 <= number <= 9:
+        cv2.putText(frame, "NUM:" + str(number), (10, 110),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1,
+                    cv2.LINE_AA)
+    
+    return frame
+
+def draw_classification_info(frame, handedness, hand_sign_text):
     info_text = handedness.classification[0].label[0:]
     if hand_sign_text != "":
         info_text = info_text + ':' + hand_sign_text
     cv2.putText(frame, info_text, (10, 60),
                cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255), 1, cv2.LINE_AA)
+    
+    return frame
 
 if __name__ == '__main__':
     main()
