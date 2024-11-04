@@ -43,10 +43,10 @@ model.compile(
 )
 
 # Тренировка модели
-model.fit(
+hisroty = model.fit(
     X_train,
     y_train,
-    epochs=1000,
+    epochs=61,
     batch_size=128,
     validation_data=(X_test, y_test),
     callbacks=[cp_callback, es_callback]
@@ -56,6 +56,40 @@ model.fit(
 val_loss, val_acc = model.evaluate(X_test, y_test, batch_size=128)
 print(f"Loss: {val_loss}")
 print(f"Accuracy: {val_acc}")
+
+import matplotlib.pyplot as plt
+
+# Извлечение потерь и точности из истории обучения
+train_loss = hisroty.history['loss']
+val_loss = hisroty.history['val_loss']
+train_accuracy = hisroty.history['accuracy']
+val_accuracy = hisroty.history['val_accuracy']
+
+# Построение графика потерь
+plt.figure(figsize=(12, 5))
+
+# Подграфик для потерь
+plt.subplot(1, 2, 1)
+plt.plot(train_loss, label='Train Loss')
+plt.plot(val_loss, label='Validation Loss')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.title('Training and Validation Loss')
+plt.legend()
+
+# Подграфик для точности
+plt.subplot(1, 2, 2)
+plt.plot(train_accuracy, label='Train Accuracy')
+plt.plot(val_accuracy, label='Validation Accuracy')
+plt.xlabel('Epochs')
+plt.ylabel('Accuracy')
+plt.title('Training and Validation Accuracy')
+plt.legend()
+
+# Отображение графиков
+plt.tight_layout()
+plt.show()
+
 
 # Конвертирование модели для Tensorflow-Lite
 converter = tf.lite.TFLiteConverter.from_keras_model(model)
