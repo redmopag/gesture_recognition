@@ -11,7 +11,7 @@ model_save_path = 'model/points_classifier/keypoint_classifier.hdf5'
 tflite_save_path = 'model/points_classifier/keypoint_classifier.tflite'
 
 # Кол-во классов классификации
-NUM_CLASSES = 3
+NUM_CLASSES = 5
 
 # Чтение датасета
 X_dataset = np.loadtxt(dataset, delimiter=',', dtype='float32', usecols=list(range(1, (21 * 2) + 1)))
@@ -23,10 +23,15 @@ X_train, X_test, y_train, y_test = train_test_split(X_dataset, y_dataset, train_
 # Построение модели
 model = tf.keras.models.Sequential([
     tf.keras.layers.Input((21 * 2, )),
-    tf.keras.layers.Dropout(0.2),
-    tf.keras.layers.Dense(20, activation='relu'),
-    tf.keras.layers.Dropout(0.4),
-    tf.keras.layers.Dense(10, activation='relu'),
+    # Первый слой: 64 нейрона
+    tf.keras.layers.Dense(64, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.01)),
+    tf.keras.layers.Dropout(0.3),
+    # Второй слой: 32
+    tf.keras.layers.Dense(32, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.01)),
+    tf.keras.layers.Dropout(0.3),
+    # Третий слой: 16
+    tf.keras.layers.Dense(16, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.01)),
+    # Четвёртый слой: NUM_CLASSES
     tf.keras.layers.Dense(NUM_CLASSES, activation='softmax')
 ])
 model.summary()
@@ -46,7 +51,7 @@ model.compile(
 hisroty = model.fit(
     X_train,
     y_train,
-    epochs=61,
+    epochs=100,
     batch_size=128,
     validation_data=(X_test, y_test),
     callbacks=[cp_callback, es_callback]

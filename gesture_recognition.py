@@ -6,7 +6,17 @@ import copy
 import itertools
 import autopy
 
+import os # для запуска приложения
+import pyautogui # для снимка экрана
+from datetime import datetime # для указания даты и времени при сохранении файлов
+import time
+
 from model.points_classifier.keypoint_classifier import KeyPointClassifier
+
+# Глобальные переменные для хранения времени последнего выполнения действий
+last_screenshot_time = 0
+last_photo_time = 0
+action_interval = 5  # Минимальный интервал между действиями в секундах
 
 def main():
     # Инициализация
@@ -71,6 +81,10 @@ def main():
                     debug_frame = draw_logging_dataset_info(debug_frame, number)
                 elif mode == 0: # Иначе классификация жестов рук
                     hand_sign_id = hand_sign_classifier(pre_processed_landmark_list)
+
+                    # Выполнение действия в зависимости от жеста
+                    action_handler(hand_sign_id, debug_frame)
+
                     # Вывод информации
                     debug_frame = draw_classification_info(debug_frame, handedness, classifier_labels[hand_sign_id])
             
@@ -166,6 +180,37 @@ def draw_classification_info(frame, handedness, hand_sign_text):
                cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255), 1, cv2.LINE_AA)
     
     return frame
+
+def action_handler(hand_sign_id, frame):
+    global last_screenshot_time, last_photo_time
+
+    current_time = time.time() # Текущее время в секундах
+
+    if hand_sign_id == 0: # знак мира - снимок с камеры
+        if current_time - last_photo_time >= action_interval:
+            if frame is not None:
+                timestamp = datetime.now().strftime("%H-%M-%S_%d-%m-%Y")
+
+                cv2.imwrite(f'camera_snapshots/camera_snapshot_{timestamp}.jpg', frame)
+
+                print(f'Camera snapshot is saved: camera_snaphsots/camera_snapshot_{timestamp}.jpg')
+
+                last_photo_time = current_time
+    elif hand_sign_id == 1: # знак ОК - снимок экрана
+        if current_time - last_screenshot_time >= action_interval:
+            timestamp = datetime.now().strftime("%H-%M-%S_%d-%m-%Y")
+
+            screenshot = pyautogui.screenshot()
+            screenshot.save(f'screenshots/screenshot_{timestamp}.png')
+
+            print(f'Screenshot is saved: screenshots/screenshot_{timestamp}.png')
+
+            last_screenshot_time = current_time
+    elif hand_sign_id == 2:
+        os.system('d:/university_projects/hello_world.txt')
+
+        print('Opened: d:/university_projects/hello_world.txt')
+
 
 if __name__ == '__main__':
     main()
