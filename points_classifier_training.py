@@ -2,6 +2,7 @@ import csv
 import numpy as np
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
 
 RANDOM_SEED = 42
 
@@ -25,7 +26,7 @@ model = tf.keras.models.Sequential([
     tf.keras.layers.Input((21 * 2, )),
     # Первый слой: 64 нейрона
     tf.keras.layers.Dense(64, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.01)),
-    tf.keras.layers.Dropout(0.3),
+    tf.keras.layers.Dropout(0.3), # Отключение 30% нейронов
     # Второй слой: 32
     tf.keras.layers.Dense(32, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.01)),
     tf.keras.layers.Dropout(0.3),
@@ -61,8 +62,6 @@ hisroty = model.fit(
 val_loss, val_acc = model.evaluate(X_test, y_test, batch_size=128)
 print(f"Loss: {val_loss}")
 print(f"Accuracy: {val_acc}")
-
-import matplotlib.pyplot as plt
 
 # Извлечение потерь и точности из истории обучения
 train_loss = hisroty.history['loss']
