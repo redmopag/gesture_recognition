@@ -44,6 +44,32 @@ def process_frame(frame):
             return gesture_name
     return "No gesture detected"
 
+def process_logging_dataset(frame, number):
+    frame = cv2.flip(frame, 1)
+    result = hands.process(frame)
+
+    if result.multi_hand_landmarks:
+        for hand_landmarks, handedness in zip(result.multi_hand_landmarks, result.multi_handedness):
+            # Подсчёт координат руки относительно фрейма
+            landmark_list = calculate_landmark_list(frame, hand_landmarks)
+            pre_processed_landmark_list = pre_process_landmark(landmark_list)
+
+            write_csv(number, pre_processed_landmark_list)
+
+            return "saved"
+        
+    return "not_saved"
+
+
+def write_csv(number, landmark_list):
+    if 0 <= number <= 9: # Режим записи датасета и задание индекса для жеста (number)
+        csv_path = 'model\points_classifier\keypoint.csv'
+        with open(csv_path, 'a', newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow([number, *landmark_list])
+    
+    return
+
 # Функции для обработки ключевых точек
 def calculate_landmark_list(frame, landmarks):
     frame_width, frame_height = frame.shape[1], frame.shape[0]
@@ -85,6 +111,27 @@ def classify_frame():
     # Классификация кадра
     gesture_name = process_frame(frame)
     return jsonify({'gesture': gesture_name})
+
+@app.route('/log_dataset', methods=['POST'])
+def log_dataset():
+    data = request.get_json()
+    if 'frame' not in data or 'number' not in data:
+        return jsonify({'error': 'Frame or number not provided'}), 400
+
+    # Декодирование изображения из base64
+    frame_data = base64.b64decode(data['frame'])
+    np_frame = np.frombuffer(frame_data, np.uint8)
+    frame = cv2.imdecode(np_frame, cv2.IMREAD_COLOR)
+
+    # Получение номера для записи
+    try:
+        number = int(data['number'])
+    except ValueError:
+        return jsonify({'error': 'Invalid number provided'}), 400
+
+    # Запись кадра в CSV
+    status = process_logging_dataset(frame, number)
+    return jsonify({'status': status})
 
 # Запуск сервера
 if __name__ == '__main__':
