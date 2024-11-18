@@ -3,16 +3,22 @@ import numpy as np
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
+import argparse
 
 RANDOM_SEED = 42
 
 # Настройка путей чтения данных и сохарнения модели
-dataset = 'model\points_classifier\keypoint.csv'
+dataset = 'model/points_classifier/keypoint.csv'
 model_save_path = 'model/points_classifier/keypoint_classifier.hdf5'
 tflite_save_path = 'model/points_classifier/keypoint_classifier.tflite'
 
+# Чтение аргументов командной строки
+parser = argparse.ArgumentParser(description='Train a neural network model.')
+parser.add_argument('--num_classes', type=int, default=5, help='Number of output classes')
+args = parser.parse_args()
+
 # Кол-во классов классификации
-NUM_CLASSES = 5
+NUM_CLASSES = args.num_classes
 
 # Чтение датасета
 X_dataset = np.loadtxt(dataset, delimiter=',', dtype='float32', usecols=list(range(1, (21 * 2) + 1)))
@@ -52,7 +58,7 @@ model.compile(
 hisroty = model.fit(
     X_train,
     y_train,
-    epochs=100,
+    epochs=150,
     batch_size=128,
     validation_data=(X_test, y_test),
     callbacks=[cp_callback, es_callback]
