@@ -14,7 +14,7 @@ tflite_save_path = 'model/points_classifier/keypoint_classifier.tflite'
 
 # Чтение аргументов командной строки
 parser = argparse.ArgumentParser(description='Train a neural network model.')
-parser.add_argument('--num_classes', type=int, default=5, help='Number of output classes')
+parser.add_argument('--num_classes', type=int, help='Number of output classes')
 args = parser.parse_args()
 
 # Кол-во классов классификации
