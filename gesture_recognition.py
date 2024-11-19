@@ -63,7 +63,7 @@ def process_logging_dataset(frame, number):
 
 def write_csv(number, landmark_list):
     if 0 <= number <= 9: # Режим записи датасета и задание индекса для жеста (number)
-        csv_path = 'model\points_classifier\keypoint.csv'
+        csv_path = 'model/points_classifier/keypoint.csv'
         with open(csv_path, 'a', newline="") as f:
             writer = csv.writer(f)
             writer.writerow([number, *landmark_list])
