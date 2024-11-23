@@ -44,7 +44,9 @@ def process_frame(frame):
             return gesture_name
     return "No gesture detected"
 
-def process_logging_dataset(frame, number):
+# Обрабаывает руку и записывает данные, если save = True
+# Возвращает: saved, not_saved и processed (если save = False)
+def process_logging_dataset(frame, number, save):
     frame = cv2.flip(frame, 1)
     result = hands.process(frame)
 
@@ -54,9 +56,11 @@ def process_logging_dataset(frame, number):
             landmark_list = calculate_landmark_list(frame, hand_landmarks)
             pre_processed_landmark_list = pre_process_landmark(landmark_list)
 
-            write_csv(number, pre_processed_landmark_list)
-
-            return "saved"
+            if save:
+                write_csv(number, pre_processed_landmark_list)
+                return "saved"
+            else:
+                return "processed"
         
     return "not_saved"
 
@@ -129,8 +133,10 @@ def log_dataset():
     except ValueError:
         return jsonify({'error': 'Invalid number provided'}), 400
 
-    # Запись кадра в CSV
-    status = process_logging_dataset(frame, number)
+    save = data.get('save', False) # Если нет значения, то False
+
+    # Запись кадра в CSV, если save = True
+    status = process_logging_dataset(frame, number, save)
     return jsonify({'status': status})
 
 # Запуск сервера
