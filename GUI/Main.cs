@@ -49,11 +49,6 @@ namespace Gesture_Recognition_App
         {
             string pythonPath = Path.GetFullPath(@"..\..\..\.venv\Scripts\python.exe"); // VENV
 
-
-            // УДАЛИТЬ!!!
-            //string pythonPath = Path.GetFullPath(@"D:\Python38\python.exe"); // без виртуальной среды
-            // УДАЛИТЬ!!!
-
             string scriptPath = Path.GetFullPath(@"..\..\..\gesture_recognition.py");
 
             Console.WriteLine($"Полный путь к скрипту: {scriptPath}");
@@ -67,26 +62,14 @@ namespace Gesture_Recognition_App
             start.RedirectStandardOutput = false;
             start.RedirectStandardError = false;
 
-            process = Process.Start(start);
-
-            /*using(
-                process = Process.Start(start)
-            )
+            try
             {
-                using(var reader = process.StandardOutput)
-                {
-                    String result = reader.ReadToEnd();
-                    Console.WriteLine(result);
-                }
-
-                using(var reader = process.StandardError)
-                {
-                    String result = reader.ReadToEnd();
-                    Console.WriteLine(result);
-                }
-
-                process.WaitForExit();
-            }*/
+                process = Process.Start(start);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Не удается запустить Python-скрипт.\n{ex.Message}");
+            }
         }
 
         private void LoadSettings()
@@ -506,9 +489,17 @@ namespace Gesture_Recognition_App
 
         private void режимДобавленияЖестовToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            sendFrameTimer?.Stop();
+
             AddingGestures addingGestures = new AddingGestures();
+
+            addingGestures.FormClosed += (s, args) =>
+            {
+                sendFrameTimer?.Start();
+            };
             addingGestures.Show();
         }
+
 
         private void статистикаToolStripMenuItem1_Click(object sender, EventArgs e)
         {
@@ -519,7 +510,10 @@ namespace Gesture_Recognition_App
         {
             if (process != null)
             {
-                process.Kill();
+                if (!process.HasExited)
+                {
+                    process.Kill();
+                }
                 process = null;
             }
 

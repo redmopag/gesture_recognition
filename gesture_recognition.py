@@ -61,6 +61,11 @@ def process_logging_dataset(frame, number, save):
                 return "saved"
             else:
                 return "processed"
+            if save:
+                write_csv(number, pre_processed_landmark_list)
+                return "saved"
+            else:
+                return "processed"
         
     return "not_saved"
 
@@ -133,6 +138,10 @@ def log_dataset():
     except ValueError:
         return jsonify({'error': 'Invalid number provided'}), 400
 
+    save = data.get('save', False) # Если нет значения, то False
+
+    # Запись кадра в CSV, если save = True
+    status = process_logging_dataset(frame, number, save)
     save = data.get('save', False) # Если нет значения, то False
 
     # Запись кадра в CSV, если save = True

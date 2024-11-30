@@ -1,5 +1,6 @@
 using AForge.Video;
 using AForge.Video.DirectShow;
+using Emgu.CV.Flann;
 using System;
 using System.Buffers.Text;
 using System.Collections.Generic;
@@ -22,6 +23,9 @@ namespace Gesture_Recognition_App
     {
         private Process process;
 
+        private System.Windows.Forms.Timer sendFrameTimer;
+        private static readonly HttpClient client = new HttpClient();
+
         private string filePath = Path.GetFullPath(@"..\..\..\model\points_classifier\classifier_labels.csv");
         private FilterInfoCollection videoDevices;
         private VideoCaptureDevice videoSource;
@@ -30,7 +34,89 @@ namespace Gesture_Recognition_App
         public AddingGestures()
         {
             InitializeComponent();
+            InitializeTimer();
             LoadVideoDevices();
+        }
+
+        private void InitializeTimer()
+        {
+            if (sendFrameTimer == null)
+            {
+                sendFrameTimer = new System.Windows.Forms.Timer();
+            }
+
+            sendFrameTimer.Interval = Properties.Settings.Default.FrameInterval;
+            sendFrameTimer.Tick += async (s, e) => await SendCurrentFrame();
+        }
+
+        private async Task SendCurrentFrame()
+        {
+            if (sendFrameTimer != null && currentFrame != null)
+            {
+                string base64Image = ConvertFrameToBase64(currentFrame);
+                await SendUnsavingFrameToServer(base64Image);
+            }
+        }
+
+        private async Task SendUnsavingFrameToServer(string base64Image)
+        {
+            int index = 99;
+
+            bool save = false;
+
+            var json = JsonSerializer.Serialize(new
+            {
+                frame = base64Image,
+                number = index,
+                save = save
+            });
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            try
+            {
+                string url = Properties.Settings.Default.ServerAddress;
+                string port = Properties.Settings.Default.ServerPort.ToString();
+
+                var stopwatch = Stopwatch.StartNew();
+
+                HttpResponseMessage response = await client.PostAsync("http://" + url + ":" + port + "/log_dataset", content);
+
+                stopwatch.Stop();
+
+                double processingTime = stopwatch.Elapsed.TotalMilliseconds;
+
+                string result = await response.Content.ReadAsStringAsync();
+
+                string status = null;
+
+                if (result != null)
+                {
+                    status = ParseResponseFromJson(result);
+                }
+
+                if (status != null)
+                {
+                    if (status.Equals("not_saved"))
+                    {
+                        currentStatus.Text = $"Жест не распознан.";
+                    }
+                    else if (status.Equals("processed"))
+                    {
+                        currentStatus.Text = "Жест распознан и готов к сохранению";
+                    }
+                    else
+                    {
+                        currentStatus.Text = "Неизвестный статус. Проверьте подключение к серверу.";
+                    }
+                }
+            }
+            catch (HttpRequestException)
+            {
+                
+            }
+            catch (Exception)
+            {
+
+            }
         }
 
         private void LoadVideoDevices()
@@ -60,6 +146,7 @@ namespace Gesture_Recognition_App
             videoSource = new VideoCaptureDevice(videoDevices[comboBoxDevices.SelectedIndex].MonikerString);
             videoSource.NewFrame += Video_NewFrame;
             videoSource.Start();
+            sendFrameTimer.Start();
         }
 
         private void Video_NewFrame(object sender, NewFrameEventArgs e)
@@ -70,10 +157,10 @@ namespace Gesture_Recognition_App
 
         private async void button1_Click(object sender, EventArgs e)
         {
-            await SendFrame();
+            await SendSavingFrame();
         }
 
-        private async Task SendFrame()
+        private async Task SendSavingFrame()
         {
             int index = 0;
 
@@ -108,15 +195,20 @@ namespace Gesture_Recognition_App
 
 
                 string base64Frame = ConvertFrameToBase64(currentFrame);
-                await SendFrameToServer(name, index, base64Frame);
+                await SendSavingFrameToServer(name, index, base64Frame);
             }
         }
 
-        private async Task SendFrameToServer(string name, int index, string frame)
+        private async Task SendSavingFrameToServer(string name, int index, string frame)
         {
-            using (HttpClient client = new HttpClient())
-            {
-                var json = $"{{\"frame\":\"{frame}\",\"number\":{index}}}";
+            bool save = true;
+                var json = JsonSerializer.Serialize(new
+                {
+                    frame = frame,
+                    number = index,
+                    save = save
+                });
+                Console.WriteLine (json);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
                 try
                 {
@@ -124,7 +216,7 @@ namespace Gesture_Recognition_App
                     string port = Properties.Settings.Default.ServerPort.ToString();
                     HttpResponseMessage response = await client.PostAsync("http://" + url + ":" + port + "/log_dataset", content);
                     string result = await response.Content.ReadAsStringAsync();
-
+                    Console.WriteLine(result);
                     string status = null;
 
                     if (result != null)
@@ -168,7 +260,6 @@ namespace Gesture_Recognition_App
                 {
                     MessageBox.Show($"Ошибка отправки запроса:\n{ex.Message}");
                 }
-            }
         }
 
         private string ParseResponseFromJson(string json)
@@ -218,10 +309,6 @@ namespace Gesture_Recognition_App
 
             string pythonPath = Path.GetFullPath(@"..\..\..\.venv\Scripts\python.exe");
 
-            // УДАЛИТЬ!!!
-            //string pythonPath = Path.GetFullPath(@"C:\Users\rusla\AppData\Local\Programs\Python\Python38\python.exe");
-            // УДАЛИТЬ!!!
-
             string scriptPath = Path.GetFullPath(@"..\..\..\points_classifier_training.py");
 
             ProcessStartInfo start = new ProcessStartInfo();
@@ -240,7 +327,10 @@ namespace Gesture_Recognition_App
         {
             if (process != null)
             {
-                process.Kill();
+                if (!process.HasExited)
+                {
+                    process.Kill();
+                }
                 process = null;
             }
 
