@@ -202,6 +202,8 @@ namespace Gesture_Recognition_App
 
                 string result = await response.Content.ReadAsStringAsync();
 
+                Console.WriteLine(result);
+
                 string gesture = null;
 
                 if (result != null)

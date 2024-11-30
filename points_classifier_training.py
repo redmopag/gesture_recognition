@@ -64,6 +64,13 @@ hisroty = model.fit(
     callbacks=[cp_callback, es_callback]
 )
 
+# Конвертирование модели для Tensorflow-Lite
+converter = tf.lite.TFLiteConverter.from_keras_model(model)
+converter.optimizations = [tf.lite.Optimize.DEFAULT]
+tflite_quantized_model = converter.convert()
+
+open(tflite_save_path, 'wb').write(tflite_quantized_model)
+
 # Оценка модели
 val_loss, val_acc = model.evaluate(X_test, y_test, batch_size=128)
 print(f"Loss: {val_loss}")
@@ -99,11 +106,3 @@ plt.legend()
 # Отображение графиков
 plt.tight_layout()
 plt.show()
-
-
-# Конвертирование модели для Tensorflow-Lite
-converter = tf.lite.TFLiteConverter.from_keras_model(model)
-converter.optimizations = [tf.lite.Optimize.DEFAULT]
-tflite_quantized_model = converter.convert()
-
-open(tflite_save_path, 'wb').write(tflite_quantized_model)
