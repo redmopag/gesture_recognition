@@ -61,6 +61,7 @@ namespace Gesture_Recognition_App
             InitializeComponent();
             PopulateActionComboBox();
             LoadSettings();
+            LoadMissingGesturesFromFile();
             PopulateGesturesList();
         }
 
@@ -241,6 +242,40 @@ namespace Gesture_Recognition_App
                 MessageBox.Show($"Не удалось создать новый файл настроек: {ex.Message}");
             }
         }
+
+        private void LoadMissingGesturesFromFile()
+        {
+            string filePath = Path.GetFullPath(@"..\..\..\model\points_classifier\classifier_labels.csv");
+
+            if (File.Exists(filePath))
+            {
+                try
+                {
+                    var gesturesFromFile = File.ReadAllLines(filePath)
+                                               .Select(line => line.Trim())
+                                               .Where(line => !string.IsNullOrEmpty(line))
+                                               .ToList();
+
+                    foreach (var gesture in gesturesFromFile)
+                    {
+                        if (!gestureActions.ContainsKey(gesture))
+                        {
+                            gestureActions[gesture] = new GestureAction(0); // Добавляем с действием "Нет действия"
+                            listBoxGesture.Items.Add(gesture); // Обновляем отображение
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Ошибка при чтении файла жестов: {ex.Message}", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+            else
+            {
+                MessageBox.Show("Файл classifier_labels.csv не найден.", "Информация", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
+
 
 
         private void btnSaveSettings_Click(object sender, EventArgs e)

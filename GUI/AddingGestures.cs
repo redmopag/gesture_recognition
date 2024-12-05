@@ -319,8 +319,15 @@ namespace Gesture_Recognition_App
             start.RedirectStandardOutput = false;
             start.RedirectStandardError = false;
 
-            process = Process.Start(start);
-            process.WaitForExit();
+            try
+            {
+                process = Process.Start(start);
+                process.WaitForExit();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Не удается запустить Python-скрипт\n{ex.Message}");
+            }
         }
 
         private void AddingGestures_FormClosing(object sender, FormClosingEventArgs e)

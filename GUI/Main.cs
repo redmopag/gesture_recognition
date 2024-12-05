@@ -162,20 +162,41 @@ namespace Gesture_Recognition_App
 
         private async Task SendCurrentFrame()
         {
-            if (sendFrameTimer != null && currentFrame != null)
+            Bitmap frameCopy = null;
+
+            lock (this)
             {
-                string base64Image = ConvertFrameToBase64(currentFrame);
-                await SendFrameToServer(base64Image);
+                if (currentFrame != null)
+                {
+                    frameCopy = (Bitmap)currentFrame.Clone(); // Создаем копию для безопасного доступа
+                }
+            }
+
+            if (frameCopy != null)
+            {
+                try
+                {
+                    string base64Image = ConvertFrameToBase64(frameCopy);
+                    await SendFrameToServer(base64Image);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Ошибка отправки фрейма: {ex.Message}");
+                }
+                finally
+                {
+                    frameCopy.Dispose(); // Освобождаем копию после использования
+                }
             }
         }
+
 
         private string ConvertFrameToBase64(Bitmap frame)
         {
             using (MemoryStream ms = new MemoryStream())
             {
-                frame.Save(ms, System.Drawing.Imaging.ImageFormat.Jpeg);
-                byte[] data = ms.ToArray();
-                return Convert.ToBase64String(data);
+                frame.Save(ms, ImageFormat.Jpeg); // Конвертация в JPEG
+                return Convert.ToBase64String(ms.ToArray());
             }
         }
 
@@ -201,8 +222,6 @@ namespace Gesture_Recognition_App
 
 
                 string result = await response.Content.ReadAsStringAsync();
-
-                Console.WriteLine(result);
 
                 string gesture = null;
 
@@ -354,9 +373,29 @@ namespace Gesture_Recognition_App
 
         private void Video_NewFrame(object sender, NewFrameEventArgs eventArgs)
         {
-            currentFrame = (Bitmap)eventArgs.Frame.Clone();
-            PreviewImgBox.Image = currentFrame;
+            try
+            {
+                Bitmap newFrame = (Bitmap)eventArgs.Frame.Clone();
+
+                lock (this)
+                {
+                    currentFrame?.Dispose();
+                    currentFrame = newFrame;
+                }
+
+                if (PreviewImgBox.Image != null)
+                {
+                    PreviewImgBox.Image.Dispose();
+                }
+                PreviewImgBox.Image = (Bitmap)newFrame.Clone();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка обработки нового кадра: {ex.Message}");
+            }
         }
+
+
 
         private void настройкиПодключенияКСерверуToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -491,16 +530,49 @@ namespace Gesture_Recognition_App
 
         private void режимДобавленияЖестовToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            sendFrameTimer?.Stop();
+            StopVideoCapture();
 
             AddingGestures addingGestures = new AddingGestures();
 
             addingGestures.FormClosed += (s, args) =>
             {
-                sendFrameTimer?.Start();
+                StartVideoCapture();
             };
+
             addingGestures.Show();
         }
+
+        private void StopVideoCapture()
+        {
+            if (videoSource != null && videoSource.IsRunning)
+            {
+                sendFrameTimer?.Stop();
+                videoSource.SignalToStop();
+                videoSource.WaitForStop();
+                videoSource = null;
+            }
+
+            currentFrame = null;
+            if (PreviewImgBox.Image != null)
+            {
+                PreviewImgBox.Image.Dispose();
+                PreviewImgBox.Image = null;
+            }
+        }
+
+        private void StartVideoCapture()
+        {
+            if (comboBoxDevices.SelectedIndex >= 0)
+            {
+                videoSource = new VideoCaptureDevice(videoDevices[comboBoxDevices.SelectedIndex].MonikerString);
+                videoSource.NewFrame += Video_NewFrame;
+                videoSource.Start();
+            }
+
+            sendFrameTimer?.Start();
+        }
+
+
 
 
         private void статистикаToolStripMenuItem1_Click(object sender, EventArgs e)
@@ -510,13 +582,10 @@ namespace Gesture_Recognition_App
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
-            if (process != null)
+            if (process != null && !process.HasExited)
             {
-                if (!process.HasExited)
-                {
-                    process.Kill();
-                }
-                process = null;
+                process.Kill();
+                process.Dispose();
             }
 
             if (videoSource != null && videoSource.IsRunning)
@@ -526,12 +595,11 @@ namespace Gesture_Recognition_App
                 videoSource = null;
             }
 
-            if (sendFrameTimer != null)
-            {
-                sendFrameTimer.Stop();
-                sendFrameTimer.Dispose();
-                sendFrameTimer = null;
-            }
+            sendFrameTimer?.Stop();
+            sendFrameTimer?.Dispose();
+            currentFrame?.Dispose();
+            PreviewImgBox.Image?.Dispose();
+            client.Dispose();
         }
 
         private void Main_FormClosed(object sender, FormClosedEventArgs e)
