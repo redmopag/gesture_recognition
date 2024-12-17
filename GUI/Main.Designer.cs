@@ -45,8 +45,10 @@
             this.информацияToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.статистикаToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.PreviewImgBox = new System.Windows.Forms.PictureBox();
+            this.StatusPicture = new System.Windows.Forms.PictureBox();
             this.Menu.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.PreviewImgBox)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.StatusPicture)).BeginInit();
             this.SuspendLayout();
             // 
             // comboBoxDevices
@@ -72,7 +74,7 @@
             // StatusLabel
             // 
             this.StatusLabel.AutoSize = true;
-            this.StatusLabel.Location = new System.Drawing.Point(12, 554);
+            this.StatusLabel.Location = new System.Drawing.Point(41, 548);
             this.StatusLabel.Name = "StatusLabel";
             this.StatusLabel.Size = new System.Drawing.Size(179, 13);
             this.StatusLabel.TabIndex = 6;
@@ -184,11 +186,23 @@
             this.PreviewImgBox.TabIndex = 3;
             this.PreviewImgBox.TabStop = false;
             // 
+            // StatusPicture
+            // 
+            this.StatusPicture.ErrorImage = global::Gesture_Recognition_App.Properties.Resources.error;
+            this.StatusPicture.InitialImage = global::Gesture_Recognition_App.Properties.Resources.loading;
+            this.StatusPicture.Location = new System.Drawing.Point(12, 542);
+            this.StatusPicture.Name = "StatusPicture";
+            this.StatusPicture.Size = new System.Drawing.Size(23, 23);
+            this.StatusPicture.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
+            this.StatusPicture.TabIndex = 9;
+            this.StatusPicture.TabStop = false;
+            // 
             // Main
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(881, 576);
+            this.Controls.Add(this.StatusPicture);
             this.Controls.Add(this.InfoLabel);
             this.Controls.Add(this.StatusLabel);
             this.Controls.Add(this.DevicesLabel);
@@ -206,6 +220,7 @@
             this.Menu.ResumeLayout(false);
             this.Menu.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.PreviewImgBox)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.StatusPicture)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -228,6 +243,7 @@
         private System.Windows.Forms.ToolStripMenuItem cooldownДействийToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem информацияToolStripMenuItem1;
         private System.Windows.Forms.ToolStripMenuItem статистикаToolStripMenuItem1;
+        private System.Windows.Forms.PictureBox StatusPicture;
     }
 }
 

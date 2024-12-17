@@ -38,6 +38,7 @@ namespace Gesture_Recognition_App
         public Main()
         {
             InitializeComponent();
+            StatusPicture.Image = Properties.Resources.loading;
             StartServer();
             statistics = new Statistics();
             LoadSettings();
@@ -52,7 +53,6 @@ namespace Gesture_Recognition_App
             string scriptPath = Path.GetFullPath(@"..\..\..\gesture_recognition.py");
 
             Console.WriteLine($"Полный путь к скрипту: {scriptPath}");
-
 
             ProcessStartInfo start = new ProcessStartInfo();
             start.FileName = pythonPath;
@@ -71,6 +71,23 @@ namespace Gesture_Recognition_App
                 MessageBox.Show($"Не удается запустить Python-скрипт.\n{ex.Message}");
             }
         }
+        private void StopServer()
+        {
+            try
+            {
+                if (process != null && !process.HasExited)
+                {
+                    process.Kill();
+                    process.WaitForExit();
+                    Console.WriteLine("Python-скрипт был остановлен.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка при завершении Python-скрипта: {ex.Message}");
+            }
+        }
+
 
         private void LoadSettings()
         {
@@ -228,6 +245,7 @@ namespace Gesture_Recognition_App
                 if (result != null)
                 {
                     StatusLabel.Text = "Статус подключения к серверу: Подключен.";
+                    StatusPicture.Image = Properties.Resources.OK;
                     gesture = ParseGestureFromJson(result);
                 }
 
@@ -244,6 +262,7 @@ namespace Gesture_Recognition_App
             catch (HttpRequestException)
             {
                 StatusLabel.Text = "Статус подключения к серверу: ОШИБКА СОЕДИНЕНИЯ";
+                StatusPicture.Image = Properties.Resources.error;
                 InfoLabel.Text = "";
             }
             catch (Exception)
@@ -530,12 +549,14 @@ namespace Gesture_Recognition_App
 
         private void режимДобавленияЖестовToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            StopServer();
             StopVideoCapture();
 
             AddingGestures addingGestures = new AddingGestures();
 
             addingGestures.FormClosed += (s, args) =>
             {
+                StartServer();
                 StartVideoCapture();
             };
 
