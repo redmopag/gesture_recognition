@@ -1,6 +1,8 @@
 using AForge.Video;
 using AForge.Video.DirectShow;
 using Emgu.CV.Aruco;
+using NAudio.CoreAudioApi;
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -477,12 +479,24 @@ namespace Gesture_Recognition_App
 
         private void VolumeDown()
         {
-            // Нужно подключать Windows API (CoreAudio)
+            var deviceEnumerator = new MMDeviceEnumerator();
+            var device = deviceEnumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
+            float currentVolume = device.AudioEndpointVolume.MasterVolumeLevelScalar;
+
+            float newVolume = Math.Max(currentVolume - 0.1f, 0.0f);
+            device.AudioEndpointVolume.MasterVolumeLevelScalar = newVolume;
+            Console.WriteLine($"Громкость уменьшена до: {newVolume * 100}%");
         }
 
         private void VolumeUp()
         {
-            // Нужно подключать Windows API (CoreAudio)
+            var deviceEnumerator = new MMDeviceEnumerator();
+            var device = deviceEnumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
+            float currentVolume = device.AudioEndpointVolume.MasterVolumeLevelScalar;
+
+            float newVolume = Math.Min(currentVolume + 0.1f, 1.0f);
+            device.AudioEndpointVolume.MasterVolumeLevelScalar = newVolume;
+            Console.WriteLine($"Громкость увеличена до: {newVolume * 100}%");
         }
 
         private void TakePicture()
