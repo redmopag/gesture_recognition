@@ -148,6 +148,23 @@ def log_dataset():
     status = process_logging_dataset(frame, number, save)
     return jsonify({'status': status})
 
+# Перезагружает модель распознавания и mediapipe
+@app.route('/reload', methods=['POST'])
+def reload():
+    global hand_sign_classifier
+    hand_sign_classifier = KeyPointClassifier()
+
+    global hands
+    hands.close()
+    hands = mp.solutions.hands.Hands(
+        static_image_mode=False,
+        max_num_hands=1,
+        min_tracking_confidence=0.5,
+        min_detection_confidence=0.5
+    )
+
+    return jsonify({'status:': 'reload successfully'}), 200
+
 # Запуск сервера
 if __name__ == '__main__':
     print('Host is running at port: 5000')

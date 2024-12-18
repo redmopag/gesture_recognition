@@ -563,14 +563,14 @@ namespace Gesture_Recognition_App
 
         private void ðåæèìÄîáàâëåíèÿÆåñòîâToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            StopServer();
+            // StopServer();
             StopVideoCapture();
 
             AddingGestures addingGestures = new AddingGestures();
 
             addingGestures.FormClosed += (s, args) =>
             {
-                StartServer();
+                // StartServer();
                 StartVideoCapture();
             };
 

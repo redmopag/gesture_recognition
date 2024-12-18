@@ -296,9 +296,17 @@ namespace Gesture_Recognition_App
             }
         }
 
-        private void button2_Click(object sender, EventArgs e)
+        private async void button2_Click(object sender, EventArgs e)
         {
             StartScript();
+            await Reload();
+        }
+
+        private async Task Reload()
+        {
+            string url = Properties.Settings.Default.ServerAddress;
+            string port = Properties.Settings.Default.ServerPort.ToString();
+            HttpResponseMessage response = await client.PostAsync("http://" + url + ":" + port + "/log_dataset", null);
         }
 
         private void StartScript()
