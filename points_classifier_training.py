@@ -2,16 +2,24 @@ import csv
 import numpy as np
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
+import argparse
+import requests
 
 RANDOM_SEED = 42
 
 # Настройка путей чтения данных и сохарнения модели
-dataset = 'model\points_classifier\keypoint.csv'
+dataset = 'model/points_classifier/keypoint.csv'
 model_save_path = 'model/points_classifier/keypoint_classifier.hdf5'
 tflite_save_path = 'model/points_classifier/keypoint_classifier.tflite'
 
+# Чтение аргументов командной строки
+parser = argparse.ArgumentParser(description='Train a neural network model.')
+parser.add_argument('--num_classes', type=int, help='Number of output classes')
+args = parser.parse_args()
+
 # Кол-во классов классификации
-NUM_CLASSES = 5
+NUM_CLASSES = args.num_classes
 
 # Чтение датасета
 X_dataset = np.loadtxt(dataset, delimiter=',', dtype='float32', usecols=list(range(1, (21 * 2) + 1)))
@@ -25,7 +33,7 @@ model = tf.keras.models.Sequential([
     tf.keras.layers.Input((21 * 2, )),
     # Первый слой: 64 нейрона
     tf.keras.layers.Dense(64, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.01)),
-    tf.keras.layers.Dropout(0.3),
+    tf.keras.layers.Dropout(0.3), # Отключение 30% нейронов
     # Второй слой: 32
     tf.keras.layers.Dense(32, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.01)),
     tf.keras.layers.Dropout(0.3),
@@ -51,18 +59,23 @@ model.compile(
 hisroty = model.fit(
     X_train,
     y_train,
-    epochs=100,
+    epochs=150,
     batch_size=128,
     validation_data=(X_test, y_test),
     callbacks=[cp_callback, es_callback]
 )
 
+# Конвертирование модели для Tensorflow-Lite
+converter = tf.lite.TFLiteConverter.from_keras_model(model)
+converter.optimizations = [tf.lite.Optimize.DEFAULT]
+tflite_quantized_model = converter.convert()
+
+open(tflite_save_path, 'wb').write(tflite_quantized_model)
+
 # Оценка модели
 val_loss, val_acc = model.evaluate(X_test, y_test, batch_size=128)
 print(f"Loss: {val_loss}")
 print(f"Accuracy: {val_acc}")
-
-import matplotlib.pyplot as plt
 
 # Извлечение потерь и точности из истории обучения
 train_loss = hisroty.history['loss']
@@ -94,11 +107,3 @@ plt.legend()
 # Отображение графиков
 plt.tight_layout()
 plt.show()
-
-
-# Конвертирование модели для Tensorflow-Lite
-converter = tf.lite.TFLiteConverter.from_keras_model(model)
-converter.optimizations = [tf.lite.Optimize.DEFAULT]
-tflite_quantized_model = converter.convert()
-
-open(tflite_save_path, 'wb').write(tflite_quantized_model)
